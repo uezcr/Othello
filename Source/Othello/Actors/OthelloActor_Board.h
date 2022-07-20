@@ -11,8 +11,7 @@
 class USpringArmComponent;
 class UCameraComponent;
 class AOthelloActor_Selector;
-class UTimelineComponent;
-
+class AOthelloActor_Chess;
 
 //DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOn)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTurnIndexChanged);
@@ -25,6 +24,10 @@ public:
 	// Sets default values for this actor's properties
 	AOthelloActor_Board(const FObjectInitializer& ObjectInitializer=FObjectInitializer::Get());
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+		//Delegate
+		FOnTurnIndexChanged OnTurnIndexChanged;
+
 	
 private:
 	//Components
@@ -34,8 +37,10 @@ private:
 	USpringArmComponent* SpringArmComponent;
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Comoponents",meta=(AllowPrivateAccess=true))
 	UCameraComponent* CameraComponent;
-	//Delegate
-	FOnTurnIndexChanged OnTurnIndexChanged;
+
+	//DelegateFunctions
+	UFUNCTION()
+	void OnTurnIndexChangedFunction();
 	//Init
 	void InitCoords();
 	void InitOffsets();
@@ -47,11 +52,29 @@ private:
 	void InitDifficulty();
 	void InitDebug();
 	void Init();
+	//SetChessBoard
+	int32 Convert2D(const FCoordinate InCoordinate);
+	void SetChess1D(int32 Index, int32 Chess);
+	void SetChess2D(const FCoordinate InCoordonate, int32 InChess);
 
 
 	//Variables
 	TMap<int32,FCoordinate> IndexCoord;
 	FCoordinate Size{7,7};
+	UPROPERTY(Replicated)
+	TArray<FVector> Offsets;
+	UPROPERTY(Replicated)
+	TArray<int32> ChessBoard;
+	UPROPERTY(Replicated)
+	TArray<AOthelloActor_Chess*> Chess;
+	UPROPERTY(Replicated)
+	AOthelloActor_Selector* Selector;
+	UPROPERTY(ReplicatedUsing = OnRep_TurnIndex)
+	int32 TurnIndex;
+	UPROPERTY(Replicated)
+	int32 Testint32;
+
+
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -68,18 +91,13 @@ protected:
 	bool InTurn(const APlayerController* PlayerController);
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Othello",meta=(AllowPrivateAccess=true))
 	TArray<APlayerController*> Players;
-	
-	UPROPERTY(ReplicatedUsing=OnRep_TurnIndex)
-	int32 TurnIndex;
+
 	UFUNCTION()
 	void OnRep_TurnIndex(int32 LastTurnIndex);
 
 	UPROPERTY(Replicated)
-	AOthelloActor_Selector* Selector;
-	UPROPERTY(Replicated)
 	FCoordinate LastOffset;
 
-	TArray<FVector> Offsets;
 	FVector TargetPosition;
 	FVector GetOffset(const FCoordinate InOffset);
 	void MoveSelector(const FCoordinate offset);
