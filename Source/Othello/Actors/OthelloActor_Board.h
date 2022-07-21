@@ -22,11 +22,8 @@ public:
 	// Sets default values for this actor's properties
 	AOthelloActor_Board(const FObjectInitializer& ObjectInitializer=FObjectInitializer::Get());
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
-
-		//Delegate
-		FOnTurnIndexChanged OnTurnIndexChanged;
-
-	
+	//Delegate
+	FOnTurnIndexChanged OnTurnIndexChanged;
 private:
 	//Components
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Comoponents",meta=(AllowPrivateAccess=true))
@@ -50,19 +47,31 @@ private:
 	void InitDifficulty();
 	void InitDebug();
 	void Init();
-	//ChessBoardFunction
+	//UtilitiesFunction
+	const bool ValidGrid(TArray<int32>& Reverse,const TArray<int32> InChessBoard,const FCoordinate InCoordinate,const int32 InChess);
+	void NextCoordinated(FCoordinate& InNextCoord,const TArray<int32> InChessBoard,const int32 InDirIndex,const int32 InChess,TArray<int32>&InCur,TArray<int32>&InAll);
+	//ChessBoardAndCoordinateFunction
 	int32 Convert2D(const FCoordinate InCoordinate);
 	void SetChess1D(int32 Index, int32 Chess);
 	void SetChess2D(const FCoordinate InCoordonate, int32 InChess);
 	void SetLastCoordinate(const FCoordinate InCoordinate);
+	const bool RemoveCoordinate(const FCoordinate& InCoordinate);
 	FVector GetOffset(const FCoordinate InOffset);
+	const bool InBound(const FCoordinate InCoordinate);
+	int32 GetChessByTurn();
+	int32 GetChessByCoordinate(const TArray<int32>InChessBoard,const FCoordinate InCoordinate);
+	const bool ValidChess(const TArray<int32>InChessBoard,const FCoordinate InCoordinate); //此函数有争议
+	void CountChess(int32& White,int32& Black);
+	void SpawnChess(const bool& CheckTurn,const FCoordinate& InCoordinate,const int32& InChess);
+	void ReverseChess(const TArray<int32>&Index,const int32& ToChess);
+	void RemoveChess();
 	//SeletorFunction
 	void SpawnSelector();
 	void MoveSelector(const FCoordinate offset);
 	void RemoveSelector();
 	void ShowSelector(const bool NewHidden);
-
-
+	//GameplayFunction
+	void GameTurn();
 	//Variables
 	TMap<int32,FCoordinate> IndexCoord;
 	FCoordinate Size{7,7};
@@ -82,8 +91,23 @@ private:
 	FCoordinate LastCoordinate;
 	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="DefaultVariables",meta=(AllowPrivateAccess=true))
 	TSubclassOf<AOthelloActor_Selector> SelectorClass;
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="DefaultVariables",meta=(AllowPrivateAccess=true))
+	TSubclassOf<AOthelloActor_Chess> ChessClass;
 	UPROPERTY(Replicated)
 	FVector TargetPosition;
+	const TArray<FCoordinate> DirOffsets
+	{
+		{-1,0},
+		{-1,1},
+		{0,1},
+		{1,1},
+		{1,0},
+		{1,-1},
+		{0,-1},
+		{-1,-1}
+	};
+	UPROPERTY(Replicated)
+	TArray<FHistory> Histories;
 
 public:
 	// Called every frame
@@ -105,8 +129,6 @@ protected:
 	UFUNCTION()
 	void OnRep_TurnIndex(int32 LastTurnIndex);
 	
-
-	
-
 	
 };
+

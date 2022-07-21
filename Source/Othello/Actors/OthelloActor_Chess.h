@@ -14,6 +14,9 @@ class OTHELLO_API AOthelloActor_Chess : public AActor
 public:	
 	// Sets default values for this actor's properties
 	AOthelloActor_Chess();
+	void Reverse(const int32 ToChess);
+	void Remove();
+	int32 Chess;
 
 protected:
 	// Called when the game starts or when spawned
@@ -22,5 +25,7 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+
+	
 
 };

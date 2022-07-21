@@ -3,7 +3,7 @@
 
 #include "Othello_Library.h"
 
-FCoordinate UOthello_Library::OffsetPlus(const FCoordinate A, const FCoordinate B)
+FCoordinate UOthello_Library::CoordinatePlus(const FCoordinate A, const FCoordinate B)
 {
 	int32 Row = A.Row+B.Row;
 	int32 Column= A.Column+B.Column;

@@ -14,6 +14,14 @@ struct FCoordinate
 	int32 Row;
 	int32 Column;
 };
+
+USTRUCT(BlueprintType)
+struct FHistory
+{
+	GENERATED_BODY()
+	FCoordinate InCoord;
+	TArray<int32> ReverseIndices;
+};
 /**
  * 
  */
@@ -22,7 +30,7 @@ class OTHELLO_API UOthello_Library : public UBlueprintFunctionLibrary
 {
 	GENERATED_BODY()
 public:
-	static FCoordinate OffsetPlus(const FCoordinate A,const FCoordinate B);
+	static FCoordinate CoordinatePlus(const FCoordinate A,const FCoordinate B);
 	static FCoordinate OffsetClamp(const FCoordinate InOffset,int32 Min,int32 Max);
 	
 };

@@ -25,3 +25,13 @@ void AOthelloActor_Chess::Tick(float DeltaTime)
 
 }
 
+void AOthelloActor_Chess::Reverse(const int32 ToChess)
+{
+	
+}
+
+void AOthelloActor_Chess::Remove()
+{
+	
+}
+
