@@ -38,7 +38,8 @@ void AOthelloActor_Board::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(AOthelloActor_Board, ChessBoard);
 	DOREPLIFETIME(AOthelloActor_Board, Chess);
 	DOREPLIFETIME(AOthelloActor_Board, Selector);
-	DOREPLIFETIME(AOthelloActor_Board, LastOffset);
+	DOREPLIFETIME(AOthelloActor_Board, LastCoordinate);
+	DOREPLIFETIME(AOthelloActor_Board, TargetPosition);
 	DOREPLIFETIME(AOthelloActor_Board, Testint32);
 	
 }
@@ -136,15 +137,55 @@ void AOthelloActor_Board::SetChess2D(const FCoordinate InCoordonate, int32 InChe
 	SetChess1D(Convert2D(InCoordonate), InChess);
 }
 
+void AOthelloActor_Board::SetLastCoordinate(const FCoordinate InCoordinate)
+{
+	LastCoordinate = InCoordinate;
+}
+
+FVector AOthelloActor_Board::GetOffset(const FCoordinate InOffset)
+{
+	int32 Index = (Size.Column+1) * InOffset.Row +InOffset.Column;
+	return Offsets[Index];
+}
+
+void AOthelloActor_Board::SpawnSelector()
+{
+	InitSelector();
+	FVector SpawnLocation = GetOffset(LastCoordinate);
+	FRotator SpawnRotaton = FRotator::ZeroRotator;
+	FTransform SpawnTransform(SpawnRotaton,SpawnLocation);
+	Selector = GetWorld()->SpawnActor<AOthelloActor_Selector>(SelectorClass,SpawnTransform);
+	Selector->AttachToActor(this,FAttachmentTransformRules::KeepRelativeTransform);
+}
+
+void AOthelloActor_Board::RemoveSelector()
+{
+	if(IsValid(Selector))
+	{
+		Selector->Destroy();
+		Selector = nullptr;
+	}
+}
+
+void AOthelloActor_Board::ShowSelector(const bool NewHidden)
+{
+	if(IsValid(Selector)) Selector->SetHidden(NewHidden);
+}
+
+void AOthelloActor_Board::MoveSelector(const FCoordinate offset)
+{
+	if(IsValid(Selector))
+	{
+		LastCoordinate = UOthello_Library::OffsetClamp(UOthello_Library::OffsetPlus(LastCoordinate,offset),0,7);
+		TargetPosition=GetOffset(LastCoordinate);
+		Selector->SetActorRelativeLocation(TargetPosition);
+	}
+}
+
 // Called when the game starts or when spawned
 void AOthelloActor_Board::BeginPlay()
 {
 	Super::BeginPlay();
-	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::Printf(TEXT("%d"), TurnIndex));
-	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::Printf(TEXT("%d"), Testint32));
-	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::Printf(TEXT("%d"), TurnIndex));
-	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::Printf(TEXT("%d"), Testint32));
-	//GEngine->AddOnScreenDebugMessage(-1,2.f,FColor::Red,FString::Printf(TEXT("%d"),IndexCoord.Num()));
 }
 
 // Called every frame
@@ -168,22 +209,6 @@ bool AOthelloActor_Board::InTurn(const APlayerController* PlayerController)
 void AOthelloActor_Board::OnRep_TurnIndex(int32 LastTurnIndex)
 {
 	OnTurnIndexChanged.Broadcast();
-}
-
-void AOthelloActor_Board::MoveSelector(const FCoordinate offset)
-{
-	if(IsValid(Selector))
-	{
-		LastOffset = UOthello_Library::OffsetClamp(UOthello_Library::OffsetPlus(LastOffset,offset),0,7);
-		TargetPosition=GetOffset(LastOffset);
-		Selector->SetActorRelativeLocation(TargetPosition);
-	}
-}
-
-FVector AOthelloActor_Board::GetOffset(const FCoordinate InOffset)
-{
-	int32 index = Size.Column * InOffset.Row +InOffset.Column;
-	return Offsets[index];
 }
 
 void AOthelloActor_Board::Move_Implementation(const APlayerController* PlayerController, const FCoordinate offset)

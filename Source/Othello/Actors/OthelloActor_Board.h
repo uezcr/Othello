@@ -3,7 +3,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/TimelineComponent.h"
 #include "GameFramework/Actor.h"
 #include "Othello/Interface/Othello_Library.h"
 #include "OthelloActor_Board.generated.h"
@@ -13,7 +12,6 @@ class UCameraComponent;
 class AOthelloActor_Selector;
 class AOthelloActor_Chess;
 
-//DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOn)
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTurnIndexChanged);
 UCLASS()
 class OTHELLO_API AOthelloActor_Board : public AActor
@@ -41,7 +39,7 @@ private:
 	//DelegateFunctions
 	UFUNCTION()
 	void OnTurnIndexChangedFunction();
-	//Init
+	//InitFunction
 	void InitCoords();
 	void InitOffsets();
 	void InitChessBoard();
@@ -52,10 +50,17 @@ private:
 	void InitDifficulty();
 	void InitDebug();
 	void Init();
-	//SetChessBoard
+	//ChessBoardFunction
 	int32 Convert2D(const FCoordinate InCoordinate);
 	void SetChess1D(int32 Index, int32 Chess);
 	void SetChess2D(const FCoordinate InCoordonate, int32 InChess);
+	void SetLastCoordinate(const FCoordinate InCoordinate);
+	FVector GetOffset(const FCoordinate InOffset);
+	//SeletorFunction
+	void SpawnSelector();
+	void MoveSelector(const FCoordinate offset);
+	void RemoveSelector();
+	void ShowSelector(const bool NewHidden);
 
 
 	//Variables
@@ -73,7 +78,12 @@ private:
 	int32 TurnIndex;
 	UPROPERTY(Replicated)
 	int32 Testint32;
-
+	UPROPERTY(Replicated)
+	FCoordinate LastCoordinate;
+	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="DefaultVariables",meta=(AllowPrivateAccess=true))
+	TSubclassOf<AOthelloActor_Selector> SelectorClass;
+	UPROPERTY(Replicated)
+	FVector TargetPosition;
 
 public:
 	// Called every frame
@@ -94,11 +104,9 @@ protected:
 
 	UFUNCTION()
 	void OnRep_TurnIndex(int32 LastTurnIndex);
+	
 
-	UPROPERTY(Replicated)
-	FCoordinate LastOffset;
+	
 
-	FVector TargetPosition;
-	FVector GetOffset(const FCoordinate InOffset);
-	void MoveSelector(const FCoordinate offset);
+	
 };
