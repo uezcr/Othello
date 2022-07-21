@@ -13,10 +13,13 @@ class OTHELLO_API AOthelloActor_Chess : public AActor
 	
 public:	
 	// Sets default values for this actor's properties
-	AOthelloActor_Chess();
+	AOthelloActor_Chess(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	void Reverse(const int32 ToChess);
 	void Remove();
 	int32 Chess;
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
+	void SpawnTimeLine(bool Reverse);
 
 protected:
 	// Called when the game starts or when spawned
@@ -25,6 +28,12 @@ protected:
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+private:
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = true))
+	USceneComponent* Scene;
+	UPROPERTY(Replicated, VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = true))
+	UStaticMeshComponent* ChessMesh;
+	void Init();
 
 	
 

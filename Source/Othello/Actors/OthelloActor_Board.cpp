@@ -11,6 +11,7 @@
 #include "OthelloActor_Selector.h"
 #include "OthelloActor_Chess.h"
 #include "Kismet/GameplayStatics.h"
+#include "Othello/Controller/OthelloController_Game.h"
 
 
 
@@ -42,6 +43,7 @@ void AOthelloActor_Board::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 	DOREPLIFETIME(AOthelloActor_Board, LastCoordinate);
 	DOREPLIFETIME(AOthelloActor_Board, TargetPosition);
 	DOREPLIFETIME(AOthelloActor_Board, Histories);
+	DOREPLIFETIME(AOthelloActor_Board, AIController);
 	DOREPLIFETIME(AOthelloActor_Board, Testint32);
 }
 
@@ -131,8 +133,8 @@ void AOthelloActor_Board::Init()
 	InitDebug();
 }
 
-const bool AOthelloActor_Board::ValidGrid(TArray<int32>& Reverse,const TArray<int32> InChessBoard, const FCoordinate InCoordinate,
-	const int32 InChess)
+const bool AOthelloActor_Board::ValidGrid(TArray<int32>& Reverse,const TArray<int32>& InChessBoard, const FCoordinate& InCoordinate,
+	const int32& InChess)
 {
 	int32 Grid = GetChessByCoordinate(InChessBoard,InCoordinate);
 	if(Grid==0||Grid==1)
@@ -161,6 +163,73 @@ const bool AOthelloActor_Board::ValidGrid(TArray<int32>& Reverse,const TArray<in
 		Reverse = ReverseAll;
 		return ReverseAll.Num()>0;
 	}
+}
+
+const bool AOthelloActor_Board::ValidGrid(const TArray<int32>& InChessBoard, const FCoordinate& InCoordinate, const int32& InChess)
+{
+	int32 Grid = GetChessByCoordinate(InChessBoard, InCoordinate);
+	if (Grid == 0 || Grid == 1)
+	{
+		return false;
+	}
+	else if (InChess == -1)
+	{
+		return false;
+	}
+	else
+	{
+		int32 DirIndex = 0;
+		TArray<int32> ReverseCur;
+		TArray<int32> ReverseAll;
+		FCoordinate NextCoordinate;
+		for (int i = 0; i <= 7; ++i)
+		{
+			DirIndex = i;
+			ReverseCur.Empty();
+			NextCoordinate = UOthello_Library::CoordinatePlus(InCoordinate, DirOffsets[DirIndex]);
+			NextCoordinated(NextCoordinate, InChessBoard, DirIndex, InChess, ReverseCur, ReverseAll);
+		}
+		return ReverseAll.Num() > 0;
+	}
+}
+
+const FColor AOthelloActor_Board::GetColor()
+{
+	return PlayerColors[TurnIndex];
+}
+
+const bool AOthelloActor_Board::ValidTurn(TArray<FCoordinate>& InCoords, const TArray<int32>& InChessBoard, const int32& InChess)
+{
+	TArray<FCoordinate> Coords;
+	FCoordinate Coord;
+	bool Flag = false;
+	for (auto& Tmp : IndexCoord)
+	{
+		Coord = Tmp.Value;
+		if (ValidGrid(InChessBoard, Coord, InChess))
+		{
+			Flag = true;
+			Coords.Add(Coord);
+		}
+	}
+	InCoords = Coords;
+	return Flag;
+}
+
+const bool AOthelloActor_Board::ValidTurn(const TArray<int32>& InChessBoard, const int32& InChess)
+{
+	FCoordinate Coord;
+	bool Flag = false;
+	for (auto& Tmp : IndexCoord)
+	{
+		Coord = Tmp.Value;
+		if (ValidGrid(InChessBoard, Coord, InChess))
+		{
+			Flag = true;
+			break;
+		}
+	}
+	return Flag;
 }
 
 void AOthelloActor_Board::NextCoordinated(FCoordinate& InNextCoord, const TArray<int32> InChessBoard,const int32 InDirIndex,const int32 InChess, TArray<int32>& InCur,
@@ -334,7 +403,6 @@ void AOthelloActor_Board::SpawnChess(const bool& CheckTurn, const FCoordinate& I
 	}
 }
 
-
 void AOthelloActor_Board::ReverseChess(const TArray<int32>& Index, const int32& ToChess)
 {
 	for(int32 i : Index)
@@ -374,13 +442,182 @@ void AOthelloActor_Board::RemoveSelector()
 	}
 }
 
-void AOthelloActor_Board::ShowSelector(const bool NewHidden)
+void AOthelloActor_Board::SetHiddenSelector(const bool& NewHidden)
 {
 	if(IsValid(Selector)) Selector->SetHidden(NewHidden);
 }
 
+const EMode AOthelloActor_Board::GetMode()
+{
+	if (AOthelloGameMode_Game* _GameMode = CastChecked<AOthelloGameMode_Game>(UGameplayStatics::GetGameMode(GetWorld())))
+	{
+		return _GameMode->GameplayMode;
+	}
+	return EMode::AI;
+}
+
+const bool AOthelloActor_Board::CanJoin()
+{
+	return Players.Num() < 2;
+}
+
+void AOthelloActor_Board::GameJoin(APlayerController* PlayerController)
+{
+	Players.Add(PlayerController);
+	GameStart();
+}
+
+void AOthelloActor_Board::GameLeave(APlayerController* PlayerController)
+{
+	Players.Remove(PlayerController);
+}
+
+void AOthelloActor_Board::GameStart()
+{
+	EMode _Mode = GetMode();
+	auto LamdaSpawn = [&]() {
+		Init();
+		SpawnChess(false, FCoordinate{ 3,3 }, 1);
+		SpawnChess(false, FCoordinate{ 4,4 }, 1);
+		SpawnChess(false, FCoordinate{ 4,3 }, 0);
+		SpawnChess(false, FCoordinate{ 3,4 }, 0);
+		SpawnSelector();
+		GameTurn();
+	};
+	if (_Mode == EMode::AI)
+	{
+		AISpawn();
+		Init();
+		LamdaSpawn();
+	}
+	else if (_Mode == EMode::Friend)
+	{
+		AIDestroy();
+		if (Players.Num() <= 1)
+		{
+			Players.SetNum(2);
+		}
+		Players[1] = Players[0];
+		LamdaSpawn();
+	}
+	else if (_Mode == EMode::Online)
+	{
+		AIDestroy();
+		if (Players.Num() > 1)
+		{
+			Init();
+		}
+	}
+}
+
+void AOthelloActor_Board::GameRestart()
+{
+	GameStart();
+}
+
+void AOthelloActor_Board::GameEnd()
+{
+}
+
+void AOthelloActor_Board::GameUndo()
+{
+	if (Histories.Num() <= 0)
+	{
+		GEngine->AddOnScreenDebugMessage(-1, 3.0f, FColor::Red, FString(" >> Error : Unable to undo."));
+		return;
+	}
+	FHistory LastHistory = Histories.Last();
+	Histories.RemoveAt(Histories.Num()-1);
+	IndexCoord.Add(Convert2D(LastHistory.InCoord), LastHistory.InCoord);
+	SetChess2D(LastHistory.InCoord, -1);
+	Chess[Convert2D(LastHistory.InCoord)]->SpawnTimeLine(true);
+	for (int32 &i : LastHistory.ReverseIndices)
+	{
+		int32 _InChess = (Chess[i]->Chess + 1) % 2;
+		SetChess1D(i, _InChess);
+		Chess[i]->Reverse(_InChess);
+	}
+}
+
 void AOthelloActor_Board::GameTurn()
 {
+	TurnIndex = (TurnIndex + 1) % 2;
+	Selector->SetColor(GetColor());
+	if (ValidTurn(ChessBoard, TurnIndex))
+	{
+		EndCount = 0;
+		if (AIController == GetPlayerByTurn())
+		{
+			SetHiddenSelector(true);
+			EventTurnAI();
+		}
+		else if (GetPlayerAuto())
+		{
+			SetHiddenSelector(true);
+			EventTurnAI();
+		}
+		else
+		{
+			EnableInput(GetPlayerByTurn());
+			SetOwner(GetPlayerByTurn());
+		}
+	}
+	else
+	{
+		++EndCount;
+		if (EndCount > 1)
+		{
+			GameEnd();
+		}
+		else
+		{
+			GameTurn();
+		}
+	}
+}
+
+void AOthelloActor_Board::AISpawn()
+{
+	if (!IsValid(AIController))
+	{
+		AIController = GetWorld()->SpawnActor<APlayerController>(APlayerController::StaticClass(),FTransform(FRotator::ZeroRotator,FVector::ZeroVector));
+		if (AIController)
+		{
+			Players.Add(AIController);
+		}
+	}
+}
+
+void AOthelloActor_Board::AIDestroy()
+{
+	if (IsValid(AIController))
+	{
+		AIController->Destroy();
+	}
+}
+
+APlayerController* AOthelloActor_Board::GetPlayerByTurn()
+{
+	if (Players.Num() > TurnIndex) return Players[TurnIndex];
+	return nullptr;
+}
+
+const bool AOthelloActor_Board::GetPlayerAuto()
+{
+	if (AOthelloController_Game* OthelloController = CastChecked<AOthelloController_Game>(GetPlayerByTurn()))
+	{
+		return OthelloController->Auto;
+	}
+	return false;
+}
+
+void AOthelloActor_Board::EventTurnAI_Implementation()
+{
+}
+
+void AOthelloActor_Board::EventConfirmAI_Implementation(const FCoordinate& InCoordinate, const int32& InChess)
+{
+
 }
 
 void AOthelloActor_Board::MoveSelector(const FCoordinate offset)
@@ -407,12 +644,6 @@ void AOthelloActor_Board::BeginPlay()
 void AOthelloActor_Board::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-}
-
-const APlayerController* AOthelloActor_Board::GetPlayerByTurn()
-{
-	if (Players.Num()>TurnIndex) return Players[TurnIndex];
-	return nullptr;
 }
 
 bool AOthelloActor_Board::InTurn(const APlayerController* PlayerController)

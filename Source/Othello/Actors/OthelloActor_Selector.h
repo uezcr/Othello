@@ -14,6 +14,7 @@ class OTHELLO_API AOthelloActor_Selector : public AActor
 public:
 	// Sets default values for this actor's properties
 	AOthelloActor_Selector(const FObjectInitializer& ObjectInitializer=FObjectInitializer::Get());
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 protected:
 	// Called when the game starts or when spawned
@@ -22,6 +23,9 @@ protected:
 public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
+	UPROPERTY(Replicated)
+	FColor Color;
+	void SetColor(const FColor& InColor);
 private:
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Components",meta=(AllowPrivateAccess=true))
 	USceneComponent* Scene;

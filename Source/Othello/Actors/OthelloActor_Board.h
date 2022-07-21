@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "Othello/Interface/Othello_Library.h"
+#include "Othello/GameModes/OthelloGameMode_Game.h"
 #include "OthelloActor_Board.generated.h"
 
 class USpringArmComponent;
@@ -48,7 +49,11 @@ private:
 	void InitDebug();
 	void Init();
 	//UtilitiesFunction
-	const bool ValidGrid(TArray<int32>& Reverse,const TArray<int32> InChessBoard,const FCoordinate InCoordinate,const int32 InChess);
+	const bool ValidGrid(TArray<int32>& Reverse,const TArray<int32>& InChessBoard,const FCoordinate& InCoordinate,const int32& InChess);
+	const bool ValidGrid(const TArray<int32>& InChessBoard, const FCoordinate& InCoordinate, const int32& InChess);
+	const FColor GetColor();
+	const bool ValidTurn(TArray<FCoordinate>& InCoords, const TArray<int32>& InChessBoard, const int32& InChess);
+	const bool ValidTurn(const TArray<int32>& InChessBoard, const int32& InChess);
 	void NextCoordinated(FCoordinate& InNextCoord,const TArray<int32> InChessBoard,const int32 InDirIndex,const int32 InChess,TArray<int32>&InCur,TArray<int32>&InAll);
 	//ChessBoardAndCoordinateFunction
 	int32 Convert2D(const FCoordinate InCoordinate);
@@ -69,9 +74,29 @@ private:
 	void SpawnSelector();
 	void MoveSelector(const FCoordinate offset);
 	void RemoveSelector();
-	void ShowSelector(const bool NewHidden);
+	void SetHiddenSelector(const bool& NewHidden);
 	//GameplayFunction
+	const EMode GetMode();
+	const bool CanJoin();
+	void GameJoin(APlayerController* PlayerController);
+	void GameLeave(APlayerController* PlayerController);
+	void GameStart();
+	void GameRestart();
+	void GameEnd(); //Undefine
+	void GameUndo();
 	void GameTurn();
+	//AIFunction
+	void AISpawn();
+	void AIDestroy();
+	//PlayerFunction
+	APlayerController* GetPlayerByTurn();
+	const bool GetPlayerAuto(); //UnDefine
+
+	//EventFunction
+	UFUNCTION(Server, Reliable)
+	void EventTurnAI();
+	UFUNCTION(Server, Reliable)
+	void EventConfirmAI(const FCoordinate& InCoordinate,const int32& InChess);
 	//Variables
 	TMap<int32,FCoordinate> IndexCoord;
 	FCoordinate Size{7,7};
@@ -89,9 +114,9 @@ private:
 	int32 Testint32;
 	UPROPERTY(Replicated)
 	FCoordinate LastCoordinate;
-	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="DefaultVariables",meta=(AllowPrivateAccess=true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DefaultVariables", meta = (AllowPrivateAccess = true))
 	TSubclassOf<AOthelloActor_Selector> SelectorClass;
-	UPROPERTY(EditAnywhere,BlueprintReadOnly,Category="DefaultVariables",meta=(AllowPrivateAccess=true))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "DefaultVariables", meta = (AllowPrivateAccess = true))
 	TSubclassOf<AOthelloActor_Chess> ChessClass;
 	UPROPERTY(Replicated)
 	FVector TargetPosition;
@@ -108,6 +133,11 @@ private:
 	};
 	UPROPERTY(Replicated)
 	TArray<FHistory> Histories;
+	UPROPERTY(Replicated)
+	APlayerController* AIController;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DefaultVariables", meta = (AllowPrivateAccess = true))
+	TArray<FColor> PlayerColors;
+	int32 EndCount;
 
 public:
 	// Called every frame
@@ -120,8 +150,6 @@ protected:
 	UFUNCTION(Server,Reliable)
 	void Move(const APlayerController* PlayerController,const FCoordinate offset);
 
-	
-	const APlayerController* GetPlayerByTurn();
 	bool InTurn(const APlayerController* PlayerController);
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Othello",meta=(AllowPrivateAccess=true))
 	TArray<APlayerController*> Players;

@@ -9,9 +9,19 @@
 /**
  * 
  */
+UENUM(BlueprintType)
+enum class EMode : uint8
+{
+	AI		UMETA(DisplayName = "AI"),
+	Friend		UMETA(DisplayName = "Friend"),
+	Online		UMETA(DisplayName = "Online")
+};
+
 UCLASS()
 class OTHELLO_API AOthelloGameMode_Game : public AGameMode
 {
 	GENERATED_BODY()
+public:
+	EMode GameplayMode;
 	
 };

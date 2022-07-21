@@ -13,5 +13,10 @@ UCLASS()
 class OTHELLO_API AOthelloController_Game : public APlayerController
 {
 	GENERATED_BODY()
+public:
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+public:
+	UPROPERTY(Replicated)
+	bool Auto;
 	
 };
