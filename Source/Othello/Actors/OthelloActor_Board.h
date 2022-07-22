@@ -25,6 +25,20 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//Delegate
 	FOnTurnIndexChanged OnTurnIndexChanged;
+	//Events
+	UFUNCTION(Server, Reliable)
+    void EventRestart();
+	UFUNCTION(Server, Reliable)
+	void EventUndo(const APlayerController* PlayerController);
+	UFUNCTION(Server, Reliable)
+	void EventMove(const APlayerController* PlayerController,const FCoordinate& InOffset);
+	UFUNCTION(Server, Reliable)
+	void EventConfirm(const APlayerController* PlayerController);
+	//GameplayFunction
+	const bool CanJoin();
+	void GameJoin(APlayerController* PlayerController);
+	void GameLeave(APlayerController* PlayerController);
+	void GameStart();
 private:
 	//Components
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly,Category="Comoponents",meta=(AllowPrivateAccess=true))
@@ -60,6 +74,7 @@ private:
 	void SetChess1D(int32 Index, int32 Chess);
 	void SetChess2D(const FCoordinate InCoordonate, int32 InChess);
 	void SetLastCoordinate(const FCoordinate InCoordinate);
+	const FCoordinate GetLastCoordinate();
 	const bool RemoveCoordinate(const FCoordinate& InCoordinate);
 	FVector GetOffset(const FCoordinate InOffset);
 	const bool InBound(const FCoordinate InCoordinate);
@@ -77,10 +92,9 @@ private:
 	void SetHiddenSelector(const bool& NewHidden);
 	//GameplayFunction
 	const EMode GetMode();
-	const bool CanJoin();
-	void GameJoin(APlayerController* PlayerController);
-	void GameLeave(APlayerController* PlayerController);
-	void GameStart();
+	
+	
+	
 	void GameRestart();
 	void GameEnd(); //Undefine
 	void GameUndo();
@@ -109,7 +123,7 @@ private:
 	UPROPERTY(Replicated)
 	AOthelloActor_Selector* Selector;
 	UPROPERTY(ReplicatedUsing = OnRep_TurnIndex)
-	int32 TurnIndex;
+	int32 TurnIndex = -1;
 	UPROPERTY(Replicated)
 	int32 Testint32;
 	UPROPERTY(Replicated)

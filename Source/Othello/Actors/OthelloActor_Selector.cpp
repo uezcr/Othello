@@ -9,6 +9,7 @@
 AOthelloActor_Selector::AOthelloActor_Selector(const FObjectInitializer& ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
+	bReplicates=true;
 	Scene=CreateDefaultSubobject<USceneComponent>("Scene");
 	SetRootComponent(Scene);
 	SelectorMesh=CreateDefaultSubobject<UStaticMeshComponent>("SelectorMesh");
@@ -28,6 +29,18 @@ void AOthelloActor_Selector::BeginPlay()
 	
 }
 
+void AOthelloActor_Selector::OnRep_Color(FColor LastColor)
+{
+	GEngine->AddOnScreenDebugMessage(-1,2.f,FColor::Blue,FString("SetColorOnRep"));
+	if(IsValid(MaterialClass))
+	{
+		if(UMaterialInstanceDynamic* MaterialInstance = SelectorMesh->CreateDynamicMaterialInstance(0,MaterialClass,NAME_None))
+		{
+			MaterialInstance->SetVectorParameterValue("BaseColor",Color);
+		}
+	}
+}
+
 // Called every frame
 void AOthelloActor_Selector::Tick(float DeltaTime)
 {
@@ -36,7 +49,18 @@ void AOthelloActor_Selector::Tick(float DeltaTime)
 
 void AOthelloActor_Selector::SetColor(const FColor& InColor)
 {
+	//GEngine->AddOnScreenDebugMessage(-1,2.f,FColor::Blue,FString("SetColor"));
 	Color = InColor;
+	if(GetWorld()->GetFirstPlayerController()->IsLocalController())
+	{
+		if(IsValid(MaterialClass))
+		{
+			if(UMaterialInstanceDynamic* MaterialInstance = SelectorMesh->CreateDynamicMaterialInstance(0,MaterialClass,NAME_None))
+			{
+				MaterialInstance->SetVectorParameterValue("BaseColor",Color);
+			}
+		}
+	}
 }
 
 

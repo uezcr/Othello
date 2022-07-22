@@ -22,6 +22,6 @@ class OTHELLO_API AOthelloGameMode_Game : public AGameMode
 {
 	GENERATED_BODY()
 public:
-	EMode GameplayMode;
+	EMode GameplayMode = EMode::AI;
 	
 };

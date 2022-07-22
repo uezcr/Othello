@@ -13,20 +13,24 @@ AOthelloActor_Chess::AOthelloActor_Chess(const FObjectInitializer& ObjectInitial
 	SetRootComponent(Scene);
 	ChessMesh = CreateDefaultSubobject<UStaticMeshComponent>("ChessMesh");
 	ChessMesh->SetupAttachment(RootComponent);
-
-	Init();
 }
 void AOthelloActor_Chess::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(AOthelloActor_Chess, Chess);
 	DOREPLIFETIME(AOthelloActor_Chess, ChessMesh);
 }
+
+void AOthelloActor_Chess::ReverseTimeLine_Implementation(bool Reverse)
+{
+	
+}
+
 // Called when the game starts or when spawned
 void AOthelloActor_Chess::BeginPlay()
 {
 	Super::BeginPlay();
-	
-	
+	Init();
 }
 
 // Called every frame
@@ -52,12 +56,25 @@ void AOthelloActor_Chess::Init()
 
 void AOthelloActor_Chess::Reverse(const int32 ToChess)
 {
-	
+	if(Chess==0)
+	{
+		ReverseTimeLine(true);
+	}
+	else if(Chess == 1)
+	{
+		ReverseTimeLine(false);
+	}
 }
 
 void AOthelloActor_Chess::Remove()
 {
-	
+	SpawnTimeLine(false);
+}
+
+void AOthelloActor_Chess::SetChess(const int32& InChess)
+{
+	Chess=InChess;
+	Init();
 }
 
 void AOthelloActor_Chess::SpawnTimeLine_Implementation(bool Reverse)

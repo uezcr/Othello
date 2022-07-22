@@ -70,12 +70,20 @@ void AOthelloActor_Board::InitOffsets()
 	Offsets.Empty();
 	for (int i = 1; i <= Size.Row + 1; ++i)
 	{
+		// for (int j = 1; j <= Size.Column + 1; ++j)
+		// {
+		// 	float X = j * 5.0f + j * 0.1f - 2.55f;
+		// 	float Y = i * 5.0f + i * 0.1f - 2.55f;
+		// 	FVector A = FVector(X, Y, 2.5f);
+		// 	FVector B = A - FVector(20.4f, 20.4f, 0.0f);
+		// 	Offsets.Add(FVector(-B.X, -B.Y, B.Z));
+		// }
 		for (int j = 1; j <= Size.Column + 1; ++j)
 		{
-			float X = j * 5.0f + j * 0.1f - 2.55f;
-			float Y = i * 5.0f + i * 0.1f - 2.55f;
-			FVector A = FVector(X, Y, 2.5f);
-			FVector B = A - FVector(20.4f, 20.4f, 0.0f);
+			float X = j * 6.0625f - 3.03125f;
+			float Y = i * 6.0625f - 3.03125f;
+			FVector A = FVector(X, Y, 2.0f);
+			FVector B = A - FVector(24.25f, 24.25f, 0.0f);
 			Offsets.Add(FVector(-B.X, -B.Y, B.Z));
 		}
 	}
@@ -295,6 +303,11 @@ void AOthelloActor_Board::SetLastCoordinate(const FCoordinate InCoordinate)
 	LastCoordinate = InCoordinate;
 }
 
+const FCoordinate AOthelloActor_Board::GetLastCoordinate()
+{
+	return LastCoordinate;
+}
+
 const bool AOthelloActor_Board::RemoveCoordinate(const FCoordinate& InCoordinate)
 {
 	return IndexCoord.Remove(Convert2D(InCoordinate)) > 0;
@@ -385,6 +398,7 @@ void AOthelloActor_Board::SpawnChess(const bool& CheckTurn, const FCoordinate& I
 		if(SpawnChess)
 		{
 			SpawnChess->Chess = InChess;
+			
 			UGameplayStatics::FinishSpawningActor(SpawnChess,SpawnTransform);
 			int32 ChessIndex = Convert2D(InCoordinate);
 			//GEngine->AddOnScreenDebugMessage(-1,3.f,FColor::Red,FString::Printf(TEXT("%d"),ChessIndex));
@@ -426,6 +440,7 @@ void AOthelloActor_Board::RemoveChess()
 void AOthelloActor_Board::SpawnSelector()
 {
 	InitSelector();
+	SetLastCoordinate(FCoordinate{4,3});
 	FVector SpawnLocation = GetOffset(LastCoordinate);
 	FRotator SpawnRotaton = FRotator::ZeroRotator;
 	FTransform SpawnTransform(SpawnRotaton,SpawnLocation);
@@ -487,7 +502,6 @@ void AOthelloActor_Board::GameStart()
 	if (_Mode == EMode::AI)
 	{
 		AISpawn();
-		Init();
 		LamdaSpawn();
 	}
 	else if (_Mode == EMode::Friend)
@@ -530,7 +544,7 @@ void AOthelloActor_Board::GameUndo()
 	Histories.RemoveAt(Histories.Num()-1);
 	IndexCoord.Add(Convert2D(LastHistory.InCoord), LastHistory.InCoord);
 	SetChess2D(LastHistory.InCoord, -1);
-	Chess[Convert2D(LastHistory.InCoord)]->SpawnTimeLine(true);
+	Chess[Convert2D(LastHistory.InCoord)]->SpawnTimeLine(false);
 	for (int32 &i : LastHistory.ReverseIndices)
 	{
 		int32 _InChess = (Chess[i]->Chess + 1) % 2;
@@ -548,6 +562,7 @@ void AOthelloActor_Board::GameTurn()
 		EndCount = 0;
 		if (AIController == GetPlayerByTurn())
 		{
+			GEngine->AddOnScreenDebugMessage(-1,2.f,FColor::Blue,FString("GAMETURN"));
 			SetHiddenSelector(true);
 			EventTurnAI();
 		}
@@ -611,6 +626,36 @@ const bool AOthelloActor_Board::GetPlayerAuto()
 	return false;
 }
 
+void AOthelloActor_Board::EventRestart_Implementation()
+{
+	GameRestart();
+}
+
+void AOthelloActor_Board::EventConfirm_Implementation(const APlayerController* PlayerController)
+{
+	if(InTurn(PlayerController))
+	{
+		SpawnChess(true,GetLastCoordinate(),GetChessByTurn());
+	}
+}
+
+void AOthelloActor_Board::EventMove_Implementation(const APlayerController* PlayerController,
+                                                   const FCoordinate& InOffset)
+{
+	if(InTurn(PlayerController))
+	{
+		MoveSelector(InOffset);
+	}
+}
+
+void AOthelloActor_Board::EventUndo_Implementation(const APlayerController* PlayerController)
+{
+	if(InTurn(PlayerController))
+	{
+		GameUndo();
+	}
+}
+
 void AOthelloActor_Board::EventTurnAI_Implementation()
 {
 }
@@ -634,10 +679,7 @@ void AOthelloActor_Board::MoveSelector(const FCoordinate offset)
 void AOthelloActor_Board::BeginPlay()
 {
 	Super::BeginPlay();
-	SpawnChess(false,FCoordinate{3,3},0);
-	SpawnChess(false,FCoordinate{4,4},0);
-	SpawnChess(false,FCoordinate{4,3},1);
-	SpawnChess(false,FCoordinate{3,4},1);
+//	GameStart();
 }
 
 // Called every frame
