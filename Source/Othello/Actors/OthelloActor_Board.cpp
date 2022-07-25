@@ -579,14 +579,12 @@ void AOthelloActor_Board::GameUndo()
 void AOthelloActor_Board::GameTurn()
 {
 	TurnIndex = (TurnIndex + 1) % 2;
-	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Yellow, FString::Printf(TEXT("ThisTurnIndexIs %d"), TurnIndex));
 	Selector->SetColor(GetColor());
 	if (ValidTurn(ChessBoard, TurnIndex))
 	{
 		EndCount = 0;
 		if (AIController == GetPlayerByTurn())
 		{
-			GEngine->AddOnScreenDebugMessage(-1,2.f,FColor::Blue,FString("GAMETURN"));
 			SetHiddenSelector(true);
 			EventTurnAI();
 		}
@@ -694,7 +692,7 @@ void AOthelloActor_Board::AITurn(const int32& InChess)
 				{
 					HrdBestCoords.Add(_Coord);
 				}
-			}
+			}		
 			int32 AIChoose = UKismetMathLibrary::RandomIntegerInRange(0,HrdBestCoords.Num()-1);
 			_Coord = HrdBestCoords[AIChoose];
 			EventConfirmAI(_Coord,InChess);

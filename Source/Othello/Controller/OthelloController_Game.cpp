@@ -79,7 +79,6 @@ void AOthelloController_Game::OthelloMoveRight()
 
 void AOthelloController_Game::OthelloConfirm()
 {
-	GEngine->AddOnScreenDebugMessage(-1,1.0f,FColor::Red,FString("Confirm"));
 	if(IsValid(OthelloGameState))
 	{
 		OthelloGameState->GetOthello()->EventConfirm(this);

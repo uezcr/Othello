@@ -94,9 +94,6 @@ private:
 	void SetHiddenSelector(const bool& NewHidden);
 	//GameplayFunction
 	const EMode GetMode();
-	
-	
-	
 	void GameRestart();
 	void GameEnd(); //Undefine
 	void GameUndo();
