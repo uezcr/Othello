@@ -69,6 +69,8 @@ private:
 	const bool ValidTurn(TArray<FCoordinate>& InCoords, const TArray<int32>& InChessBoard, const int32& InChess);
 	const bool ValidTurn(const TArray<int32>& InChessBoard, const int32& InChess);
 	void NextCoordinated(FCoordinate& InNextCoord,const TArray<int32> InChessBoard,const int32 InDirIndex,const int32 InChess,TArray<int32>&InCur,TArray<int32>&InAll);
+	const bool InCorner(const FCoordinate& InCoord);
+	const bool InSquare(const FCoordinate& InCoord);
 	//ChessBoardAndCoordinateFunction
 	int32 Convert2D(const FCoordinate InCoordinate);
 	void SetChess1D(int32 Index, int32 Chess);
@@ -104,6 +106,8 @@ private:
 	void AISpawn();
 	void AIDestroy();
 	void AITurn(const int32& InChess);
+	int32 AIDeepin(const FCoordinate& InCoordinate,const TArray<int32>& InChessBoard);
+	void AISimulate(TArray<int32>& InChessboard,TArray<int32>& InReverse,const FCoordinate& InCoordinate,const int32 InChess);
 	//PlayerFunction
 	APlayerController* GetPlayerByTurn();
 	const bool GetPlayerAuto(); //UnDefine
@@ -113,6 +117,8 @@ private:
 	void EventTurnAI();
 	UFUNCTION(Server, Reliable)
 	void EventConfirmAI(const FCoordinate& InCoordinate,const int32& InChess);
+	//CallBackFunction
+	void AIDelayTimerElapsed();
 	//Variables
 	TMap<int32,FCoordinate> IndexCoord;
 	FCoordinate Size{7,7};
@@ -156,6 +162,19 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DefaultVariables", meta = (AllowPrivateAccess = true))
 	TArray<FColor> PlayerColors;
 	int32 EndCount;
+	FTimerHandle AIDelayHandle;
+	TArray<int32> AICost
+	{
+		90,-60,10,10,10,10,-60,90,
+		-60,-80,5,5,5,5,-80,-60,
+		10,5,1,1,1,1,5,10,
+		10,5,1,1,1,1,5,10,
+		10,5,1,1,1,1,5,10,
+		10,5,1,1,1,1,5,10,
+		-60,-80,5,5,5,5,-80,-60,
+		90,-60,10,10,10,10,-60,90
+	};
+	
 
 public:
 	// Called every frame

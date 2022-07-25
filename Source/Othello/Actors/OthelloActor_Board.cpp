@@ -280,6 +280,24 @@ void AOthelloActor_Board::NextCoordinated(FCoordinate& InNextCoord, const TArray
 	}
 }
 
+const bool AOthelloActor_Board::InCorner(const FCoordinate& InCoord)
+{
+	bool A = InCoord.Row==0&&InCoord.Column==0;
+	bool B = InCoord.Row==7&&InCoord.Column==0;
+	bool C = InCoord.Row==0&&InCoord.Column==7;
+	bool D = InCoord.Row==7&&InCoord.Column==7;
+	return A||B||C||D;
+}
+
+const bool AOthelloActor_Board::InSquare(const FCoordinate& InCoord)
+{
+	bool A = InCoord.Row<2&&InCoord.Column<2;
+	bool B =((7-InCoord.Row)<2)&&InCoord.Column<2;
+	bool C = InCoord.Row<2&&((7-InCoord.Column)<2);
+	bool D = ((7-InCoord.Row)<2)&&((7-InCoord.Column)<2);
+	return A||B||C||D;
+}
+
 int32 AOthelloActor_Board::Convert2D(const FCoordinate InCoordinate)
 {
 	int32 Value = (Size.Column+1) * InCoordinate.Row + InCoordinate.Column;
@@ -332,7 +350,7 @@ const bool AOthelloActor_Board::InBound(const FCoordinate InCoordinate)
 
 int32 AOthelloActor_Board::GetChessByTurn()
 {
-	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::Printf(TEXT("TurnIndex = %d"), TurnIndex));
+	//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::Printf(TEXT("TurnIndex = %d"), TurnIndex));
 	return TurnIndex;
 }
 
@@ -625,13 +643,129 @@ void AOthelloActor_Board::AIDestroy()
 void AOthelloActor_Board::AITurn(const int32& InChess)
 {
 	TArray<FCoordinate> _Coordinates;
-	FCoordinate _Coordinate;
+	TArray<FCoordinate> BestCoordinates;
+	FCoordinate _Coord;
+	int32 Level = 2;
 	if (ValidTurn(_Coordinates, ChessBoard, InChess))
 	{
-		int32 AIChoose = UKismetMathLibrary::RandomIntegerInRange(0, _Coordinates.Num() - 1);
-		_Coordinate = _Coordinates[AIChoose];
-		EventConfirmAI(_Coordinate, InChess);
+		if(Level == 0)
+		{
+			int32 AIChoose = UKismetMathLibrary::RandomIntegerInRange(0, _Coordinates.Num() - 1);
+			_Coord = _Coordinates[AIChoose];
+			EventConfirmAI(_Coord, InChess);
+		}
+		else if(Level == 1)
+		{
+			for(FCoordinate& Ref:_Coordinates)
+			{
+				int32 BestNum = -1;
+				TArray<int32> _Reverse;
+				ValidGrid(_Reverse,ChessBoard,Ref,InChess);
+				if(_Reverse.Num()>BestNum)
+				{
+					BestCoordinates.Empty();
+					BestCoordinates.Add(Ref);
+					BestNum = _Reverse.Num();
+				}
+				else if(_Reverse.Num()==BestNum)
+				{
+					BestCoordinates.Add(Ref);
+				}
+			}
+			_Coord = BestCoordinates[UKismetMathLibrary::RandomIntegerInRange(0,BestCoordinates.Num()-1)];
+			EventConfirmAI(_Coord,InChess);
+		}
+		else if(Level == 2)
+		{
+			TArray<FCoordinate> HrdBestCoords;
+			int32 HrdCost = 0;
+			int32 HrdBestNum = -1024;
+			for(FCoordinate& Ref:_Coordinates)
+			{
+				_Coord = Ref;
+				HrdCost = AIDeepin(_Coord,ChessBoard);
+				if(HrdCost>HrdBestNum)
+				{
+					HrdBestCoords.Empty();
+					HrdBestCoords.Add(_Coord);
+					HrdBestNum = HrdCost;
+				}
+				else if(HrdCost==HrdBestNum)
+				{
+					HrdBestCoords.Add(_Coord);
+				}
+			}
+			int32 AIChoose = UKismetMathLibrary::RandomIntegerInRange(0,HrdBestCoords.Num()-1);
+			_Coord = HrdBestCoords[AIChoose];
+			EventConfirmAI(_Coord,InChess);
+		}
 	}
+}
+
+int32 AOthelloActor_Board::AIDeepin(const FCoordinate& InCoordinate, const TArray<int32>& InChessBoard)
+{
+	//then 0
+	int32 _Cost = -100005;
+	TArray<int32> _ChessBoard1 = InChessBoard;
+	TArray<int32> _Reverse;
+	ValidGrid(_Reverse,_ChessBoard1,InCoordinate,TurnIndex);
+	int32 _CostAI = AICost[Convert2D(InCoordinate)]+_Reverse.Num();
+	AISimulate(_ChessBoard1,_Reverse,InCoordinate,TurnIndex);
+	//then 1
+	int32 NumCorner = 0;
+	int32 NumSquare = 0;
+	TArray<FCoordinate> _CoordsPlayer;
+	ValidTurn(_CoordsPlayer,_ChessBoard1,(TurnIndex+1)%2);
+	FCoordinate _Coord;
+	for(FCoordinate& Ref:_CoordsPlayer)
+	{
+		_Coord = Ref;
+		NumCorner++;
+		if(InCorner(_Coord))
+		{
+			return -1800; 
+		}
+		else if(InSquare(_Coord))
+		{
+			NumSquare++;
+		}
+	}
+	//then 2
+	if((NumSquare*10)>(NumCorner*7))
+	{
+		return 1400;
+	}
+	//then 3
+	TArray<int32> _ChessBoard2 = _ChessBoard1;
+	int32 _CostPlayer;
+	for(FCoordinate& Ref: _CoordsPlayer)
+	{
+		_Coord = Ref;
+		ValidGrid(_Reverse,_ChessBoard2,_Coord,(TurnIndex+1)%2);
+		_CostPlayer = AICost[Convert2D(_Coord)]+_Reverse.Num();
+		AISimulate(_ChessBoard2,_Reverse,_Coord,(TurnIndex+1)%2);
+		_Cost = _Cost>(_CostAI-_CostPlayer) ? _Cost:(_CostAI-_CostPlayer);
+	}
+	//then 4
+	return _Cost;
+}
+
+void AOthelloActor_Board::AISimulate(TArray<int32>& InChessboard, TArray<int32>& InReverse,
+	const FCoordinate& InCoordinate, const int32 InChess)
+{
+	for(int32& i: InReverse)
+	{
+		if(i>=InChessboard.Num())
+		{
+			InChessboard.SetNum(i+1);
+		}
+		InChessboard[i] = InChess;
+	}
+	if(Convert2D(InCoordinate)>=InChessboard.Num())
+	{
+		InChessboard.SetNum(Convert2D(InCoordinate)+1);
+	}
+	InChessboard[Convert2D(InCoordinate)] = InChess;
 }
 
 APlayerController* AOthelloActor_Board::GetPlayerByTurn()
@@ -647,6 +781,11 @@ const bool AOthelloActor_Board::GetPlayerAuto()
 		return OthelloController->Auto;
 	}
 	return false;
+}
+
+void AOthelloActor_Board::AIDelayTimerElapsed()
+{
+	AITurn(TurnIndex);
 }
 
 void AOthelloActor_Board::EventRestart_Implementation()
@@ -681,7 +820,8 @@ void AOthelloActor_Board::EventUndo_Implementation(const APlayerController* Play
 
 void AOthelloActor_Board::EventTurnAI_Implementation()
 {
-	AITurn(TurnIndex);
+	GetWorldTimerManager().SetTimer(AIDelayHandle,this,&ThisClass::AIDelayTimerElapsed,1.0f);
+	//AITurn(TurnIndex);
 }
 
 void AOthelloActor_Board::EventConfirmAI_Implementation(const FCoordinate& InCoordinate, const int32& InChess)
@@ -720,6 +860,7 @@ bool AOthelloActor_Board::InTurn(const APlayerController* PlayerController)
 {
 	if(GetPlayerByTurn()==PlayerController) return true;
 	return false;
+	
 }
 
 void AOthelloActor_Board::OnRep_TurnIndex(int32 LastTurnIndex)
