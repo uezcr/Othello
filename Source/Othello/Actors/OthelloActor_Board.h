@@ -14,6 +14,7 @@ class AOthelloActor_Selector;
 class AOthelloActor_Chess;
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnTurnIndexChanged);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnChessSpawn,const int32&,BlackNum,const int32&,WhiteNum);
 UCLASS()
 class OTHELLO_API AOthelloActor_Board : public AActor
 {
@@ -25,6 +26,7 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//Delegate
 	FOnTurnIndexChanged OnTurnIndexChanged;
+	FOnChessSpawn OnChessSpawn;
 	//Events
 	UFUNCTION(Server, Reliable)
     void EventRestart();
@@ -171,6 +173,8 @@ private:
 		-60,-80,5,5,5,5,-80,-60,
 		90,-60,10,10,10,10,-60,90
 	};
+	int32 WhiteChessNum;
+	int32 BlackChessNum;
 	
 
 public:

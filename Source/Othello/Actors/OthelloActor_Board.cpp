@@ -410,7 +410,7 @@ void AOthelloActor_Board::SpawnChess(const bool& CheckTurn, const FCoordinate& I
 		}
 		else
 		{
-			GEngine->AddOnScreenDebugMessage(-1,3.f,FColor::Red,TEXT(">> Error : You can not place a chess here."));
+			GEngine->AddOnScreenDebugMessage(-1,3.f,FColor::Red,TEXT(">>不能下在这里 ！"));
 		}
 	}
 	else
@@ -437,6 +437,7 @@ void AOthelloActor_Board::SpawnChess(const bool& CheckTurn, const FCoordinate& I
 			}
 		}
 	}
+	OnChessSpawn.Broadcast(BlackChessNum,WhiteChessNum);
 }
 
 void AOthelloActor_Board::ReverseChess(const TArray<int32>& Index, const int32& ToChess)
