@@ -100,8 +100,10 @@ private:
 	void GameUndo();
 	void GameTurn();
 	//AIFunction
+	APlayerController* GetAIController();
 	void AISpawn();
 	void AIDestroy();
+	void AITurn(const int32& InChess);
 	//PlayerFunction
 	APlayerController* GetPlayerByTurn();
 	const bool GetPlayerAuto(); //UnDefine
@@ -124,6 +126,8 @@ private:
 	AOthelloActor_Selector* Selector;
 	UPROPERTY(ReplicatedUsing = OnRep_TurnIndex)
 	int32 TurnIndex = -1;
+	UPROPERTY(Replicated)
+	int32 TurnIndexed = -1;
 	UPROPERTY(Replicated)
 	int32 Testint32;
 	UPROPERTY(Replicated)

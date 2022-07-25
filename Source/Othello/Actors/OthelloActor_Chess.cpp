@@ -56,6 +56,7 @@ void AOthelloActor_Chess::Init()
 
 void AOthelloActor_Chess::Reverse(const int32 ToChess)
 {
+	Chess = ToChess;
 	if(Chess==0)
 	{
 		ReverseTimeLine(true);

@@ -31,6 +31,7 @@ class OTHELLO_API UOthello_Library : public UBlueprintFunctionLibrary
 	GENERATED_BODY()
 public:
 	static FCoordinate CoordinatePlus(const FCoordinate A,const FCoordinate B);
+	static FCoordinate CoordinateSubs(const FCoordinate& A, const FCoordinate& B);
 	static FCoordinate OffsetClamp(const FCoordinate InOffset,int32 Min,int32 Max);
 	
 };

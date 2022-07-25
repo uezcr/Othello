@@ -11,6 +11,11 @@ FCoordinate UOthello_Library::CoordinatePlus(const FCoordinate A, const FCoordin
 	return Value;
 }
 
+FCoordinate UOthello_Library::CoordinateSubs(const FCoordinate& A, const FCoordinate& B)
+{
+	return FCoordinate{ A.Row - B.Row,A.Column - B.Column };
+}
+
 FCoordinate UOthello_Library::OffsetClamp(const FCoordinate InCoordinate, int32 Min, int32 Max)
 {
 	int32 Row = FMath::Clamp(InCoordinate.Row,Min,Max);

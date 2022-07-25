@@ -11,6 +11,7 @@
 #include "OthelloActor_Selector.h"
 #include "OthelloActor_Chess.h"
 #include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetMathLibrary.h"
 #include "Othello/Controller/OthelloController_Game.h"
 
 
@@ -36,6 +37,7 @@ void AOthelloActor_Board::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AOthelloActor_Board, TurnIndex);
+	DOREPLIFETIME(AOthelloActor_Board, TurnIndexed);
 	DOREPLIFETIME(AOthelloActor_Board, Offsets);
 	DOREPLIFETIME(AOthelloActor_Board, ChessBoard);
 	DOREPLIFETIME(AOthelloActor_Board, Chess);
@@ -330,6 +332,7 @@ const bool AOthelloActor_Board::InBound(const FCoordinate InCoordinate)
 
 int32 AOthelloActor_Board::GetChessByTurn()
 {
+	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::Printf(TEXT("TurnIndex = %d"), TurnIndex));
 	return TurnIndex;
 }
 
@@ -364,6 +367,7 @@ void AOthelloActor_Board::SpawnChess(const bool& CheckTurn, const FCoordinate& I
 		TArray<int32> Reverse;
 		if(ValidGrid(Reverse,ChessBoard,InCoordinate,InChess))
 		{
+			//GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, FString::Printf(TEXT("InChess = %d"), InChess));
 			Histories.Add(FHistory{InCoordinate,Reverse});
 			ReverseChess(Reverse,InChess);
 			FTransform SpawnTransform(FRotator::ZeroRotator,GetOffset(InCoordinate));
@@ -531,6 +535,7 @@ void AOthelloActor_Board::GameRestart()
 
 void AOthelloActor_Board::GameEnd()
 {
+
 }
 
 void AOthelloActor_Board::GameUndo()
@@ -556,6 +561,7 @@ void AOthelloActor_Board::GameUndo()
 void AOthelloActor_Board::GameTurn()
 {
 	TurnIndex = (TurnIndex + 1) % 2;
+	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Yellow, FString::Printf(TEXT("ThisTurnIndexIs %d"), TurnIndex));
 	Selector->SetColor(GetColor());
 	if (ValidTurn(ChessBoard, TurnIndex))
 	{
@@ -591,6 +597,11 @@ void AOthelloActor_Board::GameTurn()
 	}
 }
 
+APlayerController* AOthelloActor_Board::GetAIController()
+{
+	return AIController;
+}
+
 void AOthelloActor_Board::AISpawn()
 {
 	if (!IsValid(AIController))
@@ -608,6 +619,18 @@ void AOthelloActor_Board::AIDestroy()
 	if (IsValid(AIController))
 	{
 		AIController->Destroy();
+	}
+}
+
+void AOthelloActor_Board::AITurn(const int32& InChess)
+{
+	TArray<FCoordinate> _Coordinates;
+	FCoordinate _Coordinate;
+	if (ValidTurn(_Coordinates, ChessBoard, InChess))
+	{
+		int32 AIChoose = UKismetMathLibrary::RandomIntegerInRange(0, _Coordinates.Num() - 1);
+		_Coordinate = _Coordinates[AIChoose];
+		EventConfirmAI(_Coordinate, InChess);
 	}
 }
 
@@ -658,11 +681,14 @@ void AOthelloActor_Board::EventUndo_Implementation(const APlayerController* Play
 
 void AOthelloActor_Board::EventTurnAI_Implementation()
 {
+	AITurn(TurnIndex);
 }
 
 void AOthelloActor_Board::EventConfirmAI_Implementation(const FCoordinate& InCoordinate, const int32& InChess)
 {
-
+	FCoordinate AIMove = UOthello_Library::CoordinateSubs(InCoordinate, LastCoordinate);
+	MoveSelector(AIMove);
+	SpawnChess(true,InCoordinate, InChess);
 }
 
 void AOthelloActor_Board::MoveSelector(const FCoordinate offset)
@@ -672,6 +698,7 @@ void AOthelloActor_Board::MoveSelector(const FCoordinate offset)
 		LastCoordinate = UOthello_Library::OffsetClamp(UOthello_Library::CoordinatePlus(LastCoordinate,offset),0,7);
 		TargetPosition=GetOffset(LastCoordinate);
 		Selector->SetActorRelativeLocation(TargetPosition);
+		SetHiddenSelector(false);
 	}
 }
 
@@ -679,6 +706,7 @@ void AOthelloActor_Board::MoveSelector(const FCoordinate offset)
 void AOthelloActor_Board::BeginPlay()
 {
 	Super::BeginPlay();
+	TurnIndexed = 0;
 //	GameStart();
 }
 

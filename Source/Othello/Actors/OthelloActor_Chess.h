@@ -17,9 +17,9 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	//NativeEventFunction
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-    void SpawnTimeLine(bool IsStart);
+    void SpawnTimeLine(bool IsForward);
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable)
-	void ReverseTimeLine(bool IsStart);
+	void ReverseTimeLine(bool IsForward);
 	//ChessFunction
 	void Reverse(const int32 ToChess);
 	void Remove();
