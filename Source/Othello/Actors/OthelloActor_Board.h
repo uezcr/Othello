@@ -73,6 +73,7 @@ private:
 	void NextCoordinated(FCoordinate& InNextCoord,const TArray<int32> InChessBoard,const int32 InDirIndex,const int32 InChess,TArray<int32>&InCur,TArray<int32>&InAll);
 	const bool InCorner(const FCoordinate& InCoord);
 	const bool InSquare(const FCoordinate& InCoord);
+	void CountChess();
 	//ChessBoardAndCoordinateFunction
 	int32 Convert2D(const FCoordinate InCoordinate);
 	void SetChess1D(int32 Index, int32 Chess);
@@ -173,8 +174,8 @@ private:
 		-60,-80,5,5,5,5,-80,-60,
 		90,-60,10,10,10,10,-60,90
 	};
-	int32 WhiteChessNum;
-	int32 BlackChessNum;
+	int32 WhiteChessNum = 2;
+	int32 BlackChessNum = 2;
 	
 
 public:

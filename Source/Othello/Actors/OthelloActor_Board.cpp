@@ -152,18 +152,18 @@ const bool AOthelloActor_Board::ValidGrid(TArray<int32>& Reverse,const TArray<in
 		Reverse = TArray<int32>{};
 		return false;
 	}
-	else if(InChess==-1)
+	if(InChess==-1)
 	{
 		Reverse = TArray<int32>{};
 		return false;
 	}
-	else
+	else if(InChess == 0||InChess==1)
 	{
 		int32 DirIndex=0;
 		TArray<int32> ReverseCur;
 		TArray<int32> ReverseAll;
 		FCoordinate NextCoordinate;
-		for(int i =0;i<=7;++i)
+		for(int i = 0;i<=7;++i)
 		{
 			DirIndex=i;
 			ReverseCur.Empty();
@@ -171,35 +171,57 @@ const bool AOthelloActor_Board::ValidGrid(TArray<int32>& Reverse,const TArray<in
 			NextCoordinated(NextCoordinate,InChessBoard,DirIndex,InChess,ReverseCur,ReverseAll);
 		}
 		Reverse = ReverseAll;
-		return ReverseAll.Num()>0;
+		if(ReverseAll.Num()>0)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
 	}
 }
 
 const bool AOthelloActor_Board::ValidGrid(const TArray<int32>& InChessBoard, const FCoordinate& InCoordinate, const int32& InChess)
 {
-	int32 Grid = GetChessByCoordinate(InChessBoard, InCoordinate);
-	if (Grid == 0 || Grid == 1)
+	int32 Grid = GetChessByCoordinate(InChessBoard,InCoordinate);
+	if(Grid==0||Grid==1)
 	{
 		return false;
 	}
-	else if (InChess == -1)
+	if(InChess==-1)
 	{
 		return false;
 	}
-	else
+	else if(InChess == 0||InChess==1)
 	{
-		int32 DirIndex = 0;
+		int32 DirIndex=0;
 		TArray<int32> ReverseCur;
 		TArray<int32> ReverseAll;
 		FCoordinate NextCoordinate;
-		for (int i = 0; i <= 7; ++i)
+		for(int i = 0;i<=7;++i)
 		{
-			DirIndex = i;
+			DirIndex=i;
 			ReverseCur.Empty();
-			NextCoordinate = UOthello_Library::CoordinatePlus(InCoordinate, DirOffsets[DirIndex]);
-			NextCoordinated(NextCoordinate, InChessBoard, DirIndex, InChess, ReverseCur, ReverseAll);
+			NextCoordinate = UOthello_Library::CoordinatePlus(InCoordinate,DirOffsets[DirIndex]);
+			NextCoordinated(NextCoordinate,InChessBoard,DirIndex,InChess,ReverseCur,ReverseAll);
 		}
-		return ReverseAll.Num() > 0;
+		if(ReverseAll.Num()>0)
+		{
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
 	}
 }
 
@@ -296,6 +318,19 @@ const bool AOthelloActor_Board::InSquare(const FCoordinate& InCoord)
 	bool C = InCoord.Row<2&&((7-InCoord.Column)<2);
 	bool D = ((7-InCoord.Row)<2)&&((7-InCoord.Column)<2);
 	return A||B||C||D;
+}
+
+void AOthelloActor_Board::CountChess()
+{
+	int32 _White = 0;
+	int32 _Black = 0;
+	for(int32 & i : ChessBoard)
+	{
+		if(i==1) _White++;
+		else if(i==0) _Black++;
+	}
+	WhiteChessNum = _White;
+	BlackChessNum = _Black;
 }
 
 int32 AOthelloActor_Board::Convert2D(const FCoordinate InCoordinate)
@@ -437,7 +472,11 @@ void AOthelloActor_Board::SpawnChess(const bool& CheckTurn, const FCoordinate& I
 			}
 		}
 	}
-	OnChessSpawn.Broadcast(BlackChessNum,WhiteChessNum);
+	if(CheckTurn)
+	{
+		CountChess();
+		OnChessSpawn.Broadcast(BlackChessNum,WhiteChessNum);
+	}
 }
 
 void AOthelloActor_Board::ReverseChess(const TArray<int32>& Index, const int32& ToChess)
@@ -577,6 +616,7 @@ void AOthelloActor_Board::GameUndo()
 	}
 }
 
+
 void AOthelloActor_Board::GameTurn()
 {
 	TurnIndex = (TurnIndex + 1) % 2;
@@ -676,27 +716,42 @@ void AOthelloActor_Board::AITurn(const int32& InChess)
 		}
 		else if(Level == 2)
 		{
-			TArray<FCoordinate> HrdBestCoords;
-			int32 HrdCost = 0;
-			int32 HrdBestNum = -1024;
-			for(FCoordinate& Ref:_Coordinates)
+			if(_Coordinates.Num()<=1)
 			{
-				_Coord = Ref;
-				HrdCost = AIDeepin(_Coord,ChessBoard);
-				if(HrdCost>HrdBestNum)
+				_Coord = _Coordinates[0];
+				EventConfirmAI(_Coord,InChess);
+			}
+			else
+			{
+				TArray<FCoordinate> HrdBestCoords;
+				int32 HrdCost = 0;
+				int32 HrdBestNum = -1024;
+				for(FCoordinate& Ref:_Coordinates)
 				{
-					HrdBestCoords.Empty();
-					HrdBestCoords.Add(_Coord);
-					HrdBestNum = HrdCost;
-				}
-				else if(HrdCost==HrdBestNum)
+					_Coord = Ref;
+					HrdCost = AIDeepin(_Coord,ChessBoard);
+					if(HrdCost>HrdBestNum)
+					{
+						HrdBestCoords.Empty();
+						HrdBestCoords.Add(_Coord);
+						HrdBestNum = HrdCost;
+					}
+					else if(HrdCost==HrdBestNum)
+					{
+						HrdBestCoords.Add(_Coord);
+					}
+				}		
+				int32 AIChoose = UKismetMathLibrary::RandomIntegerInRange(0,HrdBestCoords.Num()-1);
+				if(HrdBestCoords.IsValidIndex(AIChoose))
 				{
-					HrdBestCoords.Add(_Coord);
+					_Coord = HrdBestCoords[AIChoose];
 				}
-			}		
-			int32 AIChoose = UKismetMathLibrary::RandomIntegerInRange(0,HrdBestCoords.Num()-1);
-			_Coord = HrdBestCoords[AIChoose];
-			EventConfirmAI(_Coord,InChess);
+				else
+				{
+					_Coord = _Coordinates[0];
+				}
+				EventConfirmAI(_Coord,InChess);
+			}
 		}
 	}
 }
